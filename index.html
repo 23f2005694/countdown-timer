@@ -7,79 +7,73 @@
     <style>
         body {
             font-family: Arial, sans-serif;
-            text-align: center;
-            margin-top: 50px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            background-color: #f4f4f4;
         }
-        #progress {
+        #progressBar {
             width: 100%;
-            background-color: #f3f3f3;
+            background-color: #ddd;
             border-radius: 5px;
             overflow: hidden;
-            height: 30px;
-            margin-top: 20px;
+            height: 20px;
+            margin: 20px 0;
         }
-        #progress-bar {
+        #progress {
             height: 100%;
             background-color: #4caf50;
             width: 100%;
-            transition: width 0.5s;
-        }
-        input {
-            width: 50px;
-            text-align: center;
+            transition: width 0.1s;
         }
         button {
             margin: 5px;
-            padding: 10px 15px;
+            padding: 10px 20px;
             font-size: 16px;
+            cursor: pointer;
+        }
+        input {
+            padding: 5px;
+            font-size: 16px;
+            width: 60px;
+            text-align: center;
+        }
+        #time {
+            font-size: 48px;
+            margin: 20px;
         }
     </style>
 </head>
 <body>
-
     <h1>Countdown Timer</h1>
-    <input type="number" id="minutes" placeholder="MM" min="0"> :
-    <input type="number" id="seconds" placeholder="SS" min="0" max="59">
     <div>
-        <button id="start">Start</button>
-        <button id="pause">Pause</button>
-        <button id="reset">Reset</button>
+        <input type="number" id="minutes" placeholder="MM" min="0" max="59">
+        <input type="number" id="seconds" placeholder="SS" min="0" max="59">
     </div>
-    <h2 id="display">00:00</h2>
-    <div id="progress">
-        <div id="progress-bar"></div>
-    </div>
+    <div id="time">00:00</div>
+    <div id="progressBar"><div id="progress"></div></div>
+    <button id="start">Start</button>
+    <button id="pause">Pause</button>
+    <button id="reset">Reset</button>
 
-    <audio id="alert-sound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
+    <audio id="endSound" src="https://www.soundjay.com/button/sounds/button-3.mp3"></audio>
 
     <script>
         let timer;
         let totalTime;
         let remainingTime;
-        const display = document.getElementById('display');
-        const progressBar = document.getElementById('progress-bar');
-        const alertSound = document.getElementById('alert-sound');
+        const timeDisplay = document.getElementById('time');
+        const progressBar = document.getElementById('progress');
 
         document.getElementById('start').addEventListener('click', () => {
             const minutes = parseInt(document.getElementById('minutes').value) || 0;
             const seconds = parseInt(document.getElementById('seconds').value) || 0;
-            totalTime = (minutes * 60) + seconds;
+            totalTime = minutes * 60 + seconds;
             remainingTime = totalTime;
             startTimer();
         });
-
-        const startTimer = () => {
-            clearInterval(timer);
-            timer = setInterval(() => {
-                if (remainingTime <= 0) {
-                    clearInterval(timer);
-                    alertSound.play();
-                    return;
-                }
-                remainingTime--;
-                updateDisplay();
-            }, 1000);
-        };
 
         document.getElementById('pause').addEventListener('click', () => {
             clearInterval(timer);
@@ -87,18 +81,31 @@
 
         document.getElementById('reset').addEventListener('click', () => {
             clearInterval(timer);
-            remainingTime = totalTime;
-            updateDisplay();
+            remainingTime = 0;
+            timeDisplay.textContent = "00:00";
             progressBar.style.width = '100%';
         });
 
-        const updateDisplay = () => {
+        function startTimer() {
+            clearInterval(timer);
+            timer = setInterval(() => {
+                if (remainingTime > 0) {
+                    remainingTime--;
+                    updateDisplay();
+                } else {
+                    clearInterval(timer);
+                    document.getElementById('endSound').play();
+                    alert("Time's up!");
+                }
+            }, 1000);
+        }
+
+        function updateDisplay() {
             const minutes = Math.floor(remainingTime / 60);
             const seconds = remainingTime % 60;
-            display.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            timeDisplay.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
             progressBar.style.width = `${(remainingTime / totalTime) * 100}%`;
-        };
+        }
     </script>
-
 </body>
 </html>
