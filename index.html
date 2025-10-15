@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Countdown Timer</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+            margin-top: 50px;
+        }
+        #progress {
+            width: 100%;
+            background-color: #f3f3f3;
+            border-radius: 5px;
+            overflow: hidden;
+            height: 30px;
+            margin-top: 20px;
+        }
+        #progress-bar {
+            height: 100%;
+            background-color: #4caf50;
+            width: 100%;
+            transition: width 0.5s;
+        }
+        input {
+            width: 50px;
+            text-align: center;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            font-size: 16px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>Countdown Timer</h1>
+    <input type="number" id="minutes" placeholder="MM" min="0"> :
+    <input type="number" id="seconds" placeholder="SS" min="0" max="59">
+    <div>
+        <button id="start">Start</button>
+        <button id="pause">Pause</button>
+        <button id="reset">Reset</button>
+    </div>
+    <h2 id="display">00:00</h2>
+    <div id="progress">
+        <div id="progress-bar"></div>
+    </div>
+
+    <audio id="alert-sound" src="https://www.soundjay.com/button/beep-07.wav" preload="auto"></audio>
+
+    <script>
+        let timer;
+        let totalTime;
+        let remainingTime;
+        const display = document.getElementById('display');
+        const progressBar = document.getElementById('progress-bar');
+        const alertSound = document.getElementById('alert-sound');
+
+        document.getElementById('start').addEventListener('click', () => {
+            const minutes = parseInt(document.getElementById('minutes').value) || 0;
+            const seconds = parseInt(document.getElementById('seconds').value) || 0;
+            totalTime = (minutes * 60) + seconds;
+            remainingTime = totalTime;
+            startTimer();
+        });
+
+        const startTimer = () => {
+            clearInterval(timer);
+            timer = setInterval(() => {
+                if (remainingTime <= 0) {
+                    clearInterval(timer);
+                    alertSound.play();
+                    return;
+                }
+                remainingTime--;
+                updateDisplay();
+            }, 1000);
+        };
+
+        document.getElementById('pause').addEventListener('click', () => {
+            clearInterval(timer);
+        });
+
+        document.getElementById('reset').addEventListener('click', () => {
+            clearInterval(timer);
+            remainingTime = totalTime;
+            updateDisplay();
+            progressBar.style.width = '100%';
+        });
+
+        const updateDisplay = () => {
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            display.textContent = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            progressBar.style.width = `${(remainingTime / totalTime) * 100}%`;
+        };
+    </script>
+
+</body>
+</html>
