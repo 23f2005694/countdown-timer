@@ -3,18 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multi-Timer Countdown</title>
+    <title>Multi Countdown Timer</title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            max-width: 600px;
-            margin: auto;
             padding: 20px;
         }
         .timer {
-            margin-bottom: 20px;
+            margin: 20px 0;
+            padding: 20px;
             border: 1px solid #ccc;
-            padding: 10px;
             border-radius: 5px;
         }
         .progress {
@@ -30,84 +28,88 @@
             background-color: #76c7c0;
             width: 100%;
         }
-        button {
-            margin-top: 10px;
-        }
     </style>
 </head>
 <body>
-    <h1>Multi-Timer Countdown</h1>
-    <div id="timers"></div>
+    <h1>Multi Countdown Timer</h1>
+    <div id="timers-container"></div>
     <button id="add-timer">Add Timer</button>
 
     <script>
-        let timers = [];
+        let timerId = 0;
 
-        document.getElementById('add-timer').addEventListener('click', function() {
-            const timerId = `timer-${timers.length}`;
-            const timerElement = document.createElement('div');
-            timerElement.className = 'timer';
-            timerElement.innerHTML = `
-                <input type="number" id="${timerId}-minutes" placeholder="Minutes" min="0">
-                <input type="number" id="${timerId}-seconds" placeholder="Seconds" min="0" max="59">
-                <button id="${timerId}-start">Start</button>
-                <button id="${timerId}-pause">Pause</button>
-                <button id="${timerId}-reset">Reset</button>
-                <div class="progress">
-                    <div id="${timerId}-progress" class="progress-bar"></div>
-                </div>
-                <div id="${timerId}-display">00:00</div>
+        function createTimer() {
+            timerId++;
+            const timerContainer = document.createElement('div');
+            timerContainer.className = 'timer';
+            timerContainer.innerHTML = `
+                <input type="number" min="0" placeholder="Minutes" class="minutes" />
+                <input type="number" min="0" placeholder="Seconds" class="seconds" />
+                <button class="start">Start</button>
+                <button class="pause">Pause</button>
+                <button class="reset">Reset</button>
+                <div class="time-display">00:00</div>
+                <div class="progress"><div class="progress-bar"></div></div>
             `;
-            document.getElementById('timers').appendChild(timerElement);
-            timers.push({ id: timerId, interval: null, totalTime: 0, remainingTime: 0 });
+            document.getElementById('timers-container').appendChild(timerContainer);
 
-            document.getElementById(`${timerId}-start`).addEventListener('click', () => startTimer(timerId));
-            document.getElementById(`${timerId}-pause`).addEventListener('click', () => pauseTimer(timerId));
-            document.getElementById(`${timerId}-reset`).addEventListener('click', () => resetTimer(timerId));
-        });
+            let countdown;
+            let remainingTime;
+            let isPaused = false;
 
-        function startTimer(timerId) {
-            const timer = timers.find(t => t.id === timerId);
-            const minutes = parseInt(document.getElementById(`${timerId}-minutes`).value) || 0;
-            const seconds = parseInt(document.getElementById(`${timerId}-seconds`).value) || 0;
-            timer.totalTime = minutes * 60 + seconds;
-            timer.remainingTime = timer.totalTime;
+            const startButton = timerContainer.querySelector('.start');
+            const pauseButton = timerContainer.querySelector('.pause');
+            const resetButton = timerContainer.querySelector('.reset');
+            const minutesInput = timerContainer.querySelector('.minutes');
+            const secondsInput = timerContainer.querySelector('.seconds');
+            const timeDisplay = timerContainer.querySelector('.time-display');
+            const progressBar = timerContainer.querySelector('.progress-bar');
 
-            if (timer.interval) clearInterval(timer.interval);
-            updateDisplay(timerId, timer.remainingTime);
-            timer.interval = setInterval(() => {
-                if (timer.remainingTime > 0) {
-                    timer.remainingTime--;
-                    updateDisplay(timerId, timer.remainingTime);
-                } else {
-                    clearInterval(timer.interval);
-                    alert("Time's up!");
-                    const audio = new Audio('https://www.soundjay.com/button/sounds/button-3.mp3');
-                    audio.play();
-                }
-            }, 1000);
+            startButton.onclick = () => {
+                const minutes = parseInt(minutesInput.value) || 0;
+                const seconds = parseInt(secondsInput.value) || 0;
+                remainingTime = (minutes * 60) + seconds;
+                if (isNaN(remainingTime) || remainingTime <= 0) return;
+                isPaused = false;
+                startCountdown();
+            };
+
+            pauseButton.onclick = () => {
+                isPaused = true;
+            };
+
+            resetButton.onclick = () => {
+                clearInterval(countdown);
+                remainingTime = 0;
+                timeDisplay.textContent = "00:00";
+                progressBar.style.width = '100%';
+                minutesInput.value = '';
+                secondsInput.value = '';
+            };
+
+            function startCountdown() {
+                clearInterval(countdown);
+                countdown = setInterval(() => {
+                    if (isPaused) return;
+
+                    if (remainingTime <= 0) {
+                        clearInterval(countdown);
+                        alert('Time is up!');
+                        const audio = new Audio('https://www.soundjay.com/button/beep-07.wav');
+                        audio.play();
+                        return;
+                    }
+
+                    remainingTime--;
+                    const minutes = String(Math.floor(remainingTime / 60)).padStart(2, '0');
+                    const seconds = String(remainingTime % 60).padStart(2, '0');
+                    timeDisplay.textContent = `${minutes}:${seconds}`;
+                    progressBar.style.width = `${(remainingTime / (minutes * 60 + secondsInput.value)) * 100}%`;
+                }, 1000);
+            }
         }
 
-        function pauseTimer(timerId) {
-            const timer = timers.find(t => t.id === timerId);
-            clearInterval(timer.interval);
-        }
-
-        function resetTimer(timerId) {
-            const timer = timers.find(t => t.id === timerId);
-            clearInterval(timer.interval);
-            timer.remainingTime = timer.totalTime;
-            updateDisplay(timerId, timer.remainingTime);
-        }
-
-        function updateDisplay(timerId, remainingTime) {
-            const minutes = Math.floor(remainingTime / 60);
-            const seconds = remainingTime % 60;
-            document.getElementById(`${timerId}-display`).innerText = 
-                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-            const progressPercentage = (remainingTime / timers.find(t => t.id === timerId).totalTime) * 100;
-            document.getElementById(`${timerId}-progress`).style.width = `${progressPercentage}%`;
-        }
+        document.getElementById('add-timer').onclick = createTimer;
     </script>
 </body>
 </html>
