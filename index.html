@@ -3,102 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Multiple Countdown Timers</title>
+    <title>Multi-Timer Countdown</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        .timer { margin-bottom: 20px; }
-        .progress { width: 100%; background: #e0e0e0; border-radius: 5px; overflow: hidden; }
-        .progress-bar { height: 20px; background: #76c7c0; width: 100%; transition: width 1s; }
-        .controls { margin-top: 10px; }
-        input { margin-right: 5px; }
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: auto;
+            padding: 20px;
+        }
+        .timer {
+            margin-bottom: 20px;
+            border: 1px solid #ccc;
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .progress {
+            width: 100%;
+            height: 20px;
+            background-color: #e0e0e0;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .progress-bar {
+            height: 100%;
+            background-color: #76c7c0;
+            width: 100%;
+        }
+        button {
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
-    <h1>Multiple Countdown Timers</h1>
+    <h1>Multi-Timer Countdown</h1>
     <div id="timers"></div>
     <button id="add-timer">Add Timer</button>
 
     <script>
         let timers = [];
 
-        function createTimerElement() {
-            const timerContainer = document.createElement('div');
-            timerContainer.className = 'timer';
+        document.getElementById('add-timer').addEventListener('click', function() {
+            const timerId = `timer-${timers.length}`;
+            const timerElement = document.createElement('div');
+            timerElement.className = 'timer';
+            timerElement.innerHTML = `
+                <input type="number" id="${timerId}-minutes" placeholder="Minutes" min="0">
+                <input type="number" id="${timerId}-seconds" placeholder="Seconds" min="0" max="59">
+                <button id="${timerId}-start">Start</button>
+                <button id="${timerId}-pause">Pause</button>
+                <button id="${timerId}-reset">Reset</button>
+                <div class="progress">
+                    <div id="${timerId}-progress" class="progress-bar"></div>
+                </div>
+                <div id="${timerId}-display">00:00</div>
+            `;
+            document.getElementById('timers').appendChild(timerElement);
+            timers.push({ id: timerId, interval: null, totalTime: 0, remainingTime: 0 });
 
-            const minutesInput = document.createElement('input');
-            minutesInput.type = 'number';
-            minutesInput.placeholder = 'Minutes';
-            minutesInput.min = 0;
+            document.getElementById(`${timerId}-start`).addEventListener('click', () => startTimer(timerId));
+            document.getElementById(`${timerId}-pause`).addEventListener('click', () => pauseTimer(timerId));
+            document.getElementById(`${timerId}-reset`).addEventListener('click', () => resetTimer(timerId));
+        });
 
-            const secondsInput = document.createElement('input');
-            secondsInput.type = 'number';
-            secondsInput.placeholder = 'Seconds';
-            secondsInput.min = 0;
-            secondsInput.max = 59;
+        function startTimer(timerId) {
+            const timer = timers.find(t => t.id === timerId);
+            const minutes = parseInt(document.getElementById(`${timerId}-minutes`).value) || 0;
+            const seconds = parseInt(document.getElementById(`${timerId}-seconds`).value) || 0;
+            timer.totalTime = minutes * 60 + seconds;
+            timer.remainingTime = timer.totalTime;
 
-            const startButton = document.createElement('button');
-            startButton.innerText = 'Start';
-            const pauseButton = document.createElement('button');
-            pauseButton.innerText = 'Pause';
-            const resetButton = document.createElement('button');
-            resetButton.innerText = 'Reset';
-
-            const progressBarContainer = document.createElement('div');
-            progressBarContainer.className = 'progress';
-            const progressBar = document.createElement('div');
-            progressBar.className = 'progress-bar';
-
-            progressBarContainer.appendChild(progressBar);
-            timerContainer.appendChild(minutesInput);
-            timerContainer.appendChild(secondsInput);
-            timerContainer.appendChild(startButton);
-            timerContainer.appendChild(pauseButton);
-            timerContainer.appendChild(resetButton);
-            timerContainer.appendChild(progressBarContainer);
-
-            document.getElementById('timers').appendChild(timerContainer);
-
-            let countdown;
-            let totalTime;
-
-            startButton.onclick = function () {
-                const minutes = parseInt(minutesInput.value) || 0;
-                const seconds = parseInt(secondsInput.value) || 0;
-                totalTime = minutes * 60 + seconds;
-                startTimer(progressBar);
-            };
-
-            pauseButton.onclick = function () {
-                clearInterval(countdown);
-            };
-
-            resetButton.onclick = function () {
-                clearInterval(countdown);
-                progressBar.style.width = '100%';
-                alert('Timer reset!');
-            };
-
-            function startTimer(progressBar) {
-                clearInterval(countdown);
-                const initialTime = totalTime;
-                countdown = setInterval(function () {
-                    if (totalTime <= 0) {
-                        clearInterval(countdown);
-                        alert('Time is up!');
-                        const audio = new Audio('https://www.soundjay.com/button/sounds/beep-07.wav');
-                        audio.play();
-                    } else {
-                        totalTime--;
-                        const minutesRemaining = Math.floor(totalTime / 60);
-                        const secondsRemaining = totalTime % 60;
-                        progressBar.style.width = `${(totalTime / initialTime) * 100}%`;
-                        console.log(`Time Remaining: ${minutesRemaining}:${secondsRemaining < 10 ? '0' : ''}${secondsRemaining}`);
-                    }
-                }, 1000);
-            }
+            if (timer.interval) clearInterval(timer.interval);
+            updateDisplay(timerId, timer.remainingTime);
+            timer.interval = setInterval(() => {
+                if (timer.remainingTime > 0) {
+                    timer.remainingTime--;
+                    updateDisplay(timerId, timer.remainingTime);
+                } else {
+                    clearInterval(timer.interval);
+                    alert("Time's up!");
+                    const audio = new Audio('https://www.soundjay.com/button/sounds/button-3.mp3');
+                    audio.play();
+                }
+            }, 1000);
         }
 
-        document.getElementById('add-timer').onclick = createTimerElement;
+        function pauseTimer(timerId) {
+            const timer = timers.find(t => t.id === timerId);
+            clearInterval(timer.interval);
+        }
+
+        function resetTimer(timerId) {
+            const timer = timers.find(t => t.id === timerId);
+            clearInterval(timer.interval);
+            timer.remainingTime = timer.totalTime;
+            updateDisplay(timerId, timer.remainingTime);
+        }
+
+        function updateDisplay(timerId, remainingTime) {
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            document.getElementById(`${timerId}-display`).innerText = 
+                `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+            const progressPercentage = (remainingTime / timers.find(t => t.id === timerId).totalTime) * 100;
+            document.getElementById(`${timerId}-progress`).style.width = `${progressPercentage}%`;
+        }
     </script>
 </body>
 </html>
